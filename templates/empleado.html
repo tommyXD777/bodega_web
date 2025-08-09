@@ -1,0 +1,407 @@
+{% extends "base.html" %}
+
+{% block title %}Empleado - {{ store_type.title() }}{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 p-4">
+    <div class="max-w-6xl mx-auto">
+        <div class="flex justify-between items-center mb-6">
+            <div class="flex items-center gap-3">
+                <i data-lucide="package" class="w-8 h-8 text-blue-600"></i>
+                <h1 class="text-3xl font-bold">
+                    {% if store_type == 'ropa' %}Tienda de Ropa - Empleado
+                    {% elif store_type == 'muebles' %}Tienda de Muebles - Empleado
+                    {% else %}Agencia de Cerveza - Empleado{% endif %}
+                </h1>
+            </div>
+            <a href="/logout" class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                <i data-lucide="log-out" class="w-4 h-4 mr-2"></i>
+                Cerrar Sesión
+            </a>
+        </div>
+
+         Tabs 
+        <div class="mb-6">
+            <div class="border-b border-gray-200">
+                <nav class="-mb-px flex space-x-8">
+                    <button onclick="showTab('products')" class="tab-button border-blue-500 text-blue-600 whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm" data-tab="products">
+                        Productos
+                    </button>
+                    <button onclick="showTab('sales')" class="tab-button border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm" data-tab="sales">
+                        Mis Ventas
+                    </button>
+                    <button onclick="showTab('new-sale')" class="tab-button border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm" data-tab="new-sale">
+                        Nueva Venta
+                    </button>
+                </nav>
+            </div>
+        </div>
+
+         Tab Content 
+        <div id="products-tab" class="tab-content">
+            <div class="bg-white shadow rounded-lg">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h2 class="text-lg font-medium text-gray-900">Productos Disponibles</h2>
+                    <p class="text-sm text-gray-500">Consulta el inventario disponible</p>
+                </div>
+                <div class="p-6">
+                    <div id="products-list" class="space-y-4">
+                         Los productos se cargarán aquí 
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="sales-tab" class="tab-content hidden">
+            <div class="bg-white shadow rounded-lg">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h2 class="text-lg font-medium text-gray-900">Mis Ventas</h2>
+                    <p class="text-sm text-gray-500">Historial de ventas realizadas</p>
+                </div>
+                <div class="p-6">
+                    <div id="sales-list" class="space-y-4">
+                         Las ventas se cargarán aquí 
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="new-sale-tab" class="tab-content hidden">
+            <div class="bg-white shadow rounded-lg">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h2 class="text-lg font-medium text-gray-900">Realizar Nueva Venta</h2>
+                    <p class="text-sm text-gray-500">Procesa una venta de productos</p>
+                </div>
+                <div class="p-6">
+                    <form id="saleForm" class="space-y-4 max-w-md">
+                        <div>
+                            <label for="saleProduct" class="block text-sm font-medium text-gray-700">Producto</label>
+                            <select id="saleProduct" name="product_id" required
+                                    class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                                <option value="">Seleccionar producto</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label for="quantity" class="block text-sm font-medium text-gray-700">Cantidad</label>
+                            <input type="number" min="1" id="quantity" name="quantity" required
+                                   class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        
+                        <div>
+                            <label for="customerName" class="block text-sm font-medium text-gray-700">Nombre del Cliente</label>
+                            <input type="text" id="customerName" name="customer_name" required
+                                   class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        
+                        <div>
+                            <label for="customerPhone" class="block text-sm font-medium text-gray-700">Teléfono del Cliente</label>
+                            <input type="text" id="customerPhone" name="customer_phone" required
+                                   class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        
+                        {% if store_type == 'muebles' %}
+                        <div>
+                            <label for="paymentType" class="block text-sm font-medium text-gray-700">Tipo de Pago</label>
+                            <select id="paymentType" name="payment_type"
+                                    class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                                <option value="cash">Contado</option>
+                                <option value="credit">Crédito</option>
+                            </select>
+                        </div>
+                        
+                        <div id="creditFields" class="hidden space-y-4">
+                            <div>
+                                <label for="customerAddress" class="block text-sm font-medium text-gray-700">Dirección del Cliente</label>
+                                <input type="text" id="customerAddress" name="customer_address"
+                                       class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+                            
+                            <div>
+                                <label for="installments" class="block text-sm font-medium text-gray-700">Número de Cuotas</label>
+                                <select id="installments" name="installments" onchange="calculateInstallment()"
+                                        class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                                    <option value="2">2 meses</option>
+                                    <option value="3">3 meses</option>
+                                    <option value="4">4 meses</option>
+                                    <option value="5">5 meses</option>
+                                    <option value="6" selected>6 meses</option>
+                                </select>
+                            </div>
+                            
+                            <div id="installmentPreview" class="p-3 bg-blue-50 rounded-md">
+                                <div class="text-sm">
+                                    <div class="flex justify-between">
+                                        <span class="font-medium">Total a financiar:</span>
+                                        <span id="totalAmount">$0.00</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="font-medium">Cuota mensual:</span>
+                                        <span id="monthlyPayment" class="text-blue-600 font-bold">$0.00</span>
+                                    </div>
+                                    <div class="flex justify-between text-xs text-gray-600 mt-1">
+                                        <span>Primera cuota:</span>
+                                        <span id="firstPaymentDate"></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <button type="submit" class="w-full inline-flex justify-center items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700">
+                            <i data-lucide="shopping-cart" class="w-4 h-4 mr-2"></i>
+                            Realizar Venta
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+         Resumen del día 
+        <div class="mt-6 bg-white shadow rounded-lg">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h2 class="text-lg font-medium text-gray-900">Resumen del Día</h2>
+            </div>
+            <div class="p-6">
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="text-center">
+                        <div id="daily-sales" class="text-2xl font-bold text-blue-600">0</div>
+                        <div class="text-sm text-gray-600">Ventas Hoy</div>
+                    </div>
+                    <div class="text-center">
+                        <div id="daily-revenue" class="text-2xl font-bold text-green-600">$0</div>
+                        <div class="text-sm text-gray-600">Ingresos Hoy</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const storeType = '{{ store_type }}';
+let products = [];
+let sales = [];
+
+// Funciones de tabs
+function showTab(tabName) {
+    // Ocultar todos los tabs
+    document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.classList.add('hidden');
+    });
+    
+    // Mostrar el tab seleccionado
+    document.getElementById(tabName + '-tab').classList.remove('hidden');
+    
+    // Actualizar estilos de botones
+    document.querySelectorAll('.tab-button').forEach(btn => {
+        btn.classList.remove('border-blue-500', 'text-blue-600');
+        btn.classList.add('border-transparent', 'text-gray-500');
+    });
+    
+    document.querySelector(`[data-tab="${tabName}"]`).classList.remove('border-transparent', 'text-gray-500');
+    document.querySelector(`[data-tab="${tabName}"]`).classList.add('border-blue-500', 'text-blue-600');
+    
+    // Cargar datos según el tab
+    if (tabName === 'products') {
+        loadProducts();
+    } else if (tabName === 'sales') {
+        loadSales();
+    } else if (tabName === 'new-sale') {
+        loadProducts(); // Para el select de productos
+    }
+}
+
+// Funciones de productos
+async function loadProducts() {
+    try {
+        const response = await fetch(`/api/products/${storeType}`);
+        products = await response.json();
+        renderProducts();
+        updateProductSelect();
+    } catch (error) {
+        console.error('Error loading products:', error);
+    }
+}
+
+function renderProducts() {
+    const productsList = document.getElementById('products-list');
+    productsList.innerHTML = '';
+    
+    products.forEach(product => {
+        const productDiv = document.createElement('div');
+        productDiv.className = 'flex items-center justify-between p-4 border rounded-lg';
+        
+        const stockBadge = product.stock > 0 ? 
+            '<span class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">Disponible</span>' :
+            '<span class="px-2 py-1 text-xs rounded-full bg-red-100 text-red-800">Agotado</span>';
+        
+        productDiv.innerHTML = `
+            <div class="flex-1">
+                <h3 class="font-semibold">${product.name}</h3>
+                <div class="flex gap-4 text-sm text-gray-600">
+                    <span>Precio: $${product.price_client}</span>
+                    <span>Stock: ${product.stock}</span>
+                    <span>Categoría: ${product.category}</span>
+                </div>
+            </div>
+            ${stockBadge}
+        `;
+        
+        productsList.appendChild(productDiv);
+    });
+}
+
+function updateProductSelect() {
+    const select = document.getElementById('saleProduct');
+    select.innerHTML = '<option value="">Seleccionar producto</option>';
+    
+    products.filter(p => p.stock > 0).forEach(product => {
+        const option = document.createElement('option');
+        option.value = product.id;
+        option.textContent = `${product.name} - $${product.price_client} (Stock: ${product.stock})`;
+        select.appendChild(option);
+    });
+}
+
+// Funciones de ventas
+async function loadSales() {
+    try {
+        const response = await fetch(`/api/sales/${storeType}`);
+        sales = await response.json();
+        renderSales();
+        updateDailySummary();
+    } catch (error) {
+        console.error('Error loading sales:', error);
+    }
+}
+
+function renderSales() {
+    const salesList = document.getElementById('sales-list');
+    salesList.innerHTML = '';
+    
+    sales.forEach(sale => {
+        const saleDiv = document.createElement('div');
+        saleDiv.className = 'flex items-center justify-between p-4 border rounded-lg';
+        
+        const paymentBadge = sale.payment_type === 'cash' ? 'Contado' : 'Crédito';
+        
+        saleDiv.innerHTML = `
+            <div class="flex-1">
+                <div class="flex items-center gap-3">
+                    <h3 class="font-semibold">${sale.product_name}</h3>
+                    <span class="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">${paymentBadge}</span>
+                </div>
+                <div class="flex gap-4 text-sm text-gray-600">
+                    <span>Cantidad: ${sale.quantity}</span>
+                    <span>Total: $${sale.total}</span>
+                    <span>Cliente: ${sale.customer_name}</span>
+                    <span>Fecha: ${new Date(sale.created_at).toLocaleDateString()}</span>
+                </div>
+            </div>
+            <button onclick="generateTicket(${sale.id})" class="inline-flex items-center px-3 py-1 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                <i data-lucide="file-text" class="w-4 h-4 mr-2"></i>
+                Ticket
+            </button>
+        `;
+        
+        salesList.appendChild(saleDiv);
+    });
+    
+    lucide.createIcons();
+}
+
+async function generateTicket(saleId) {
+    try {
+        const response = await fetch(`/api/ticket/${saleId}`);
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `ticket-${saleId}.pdf`;
+        a.click();
+        window.URL.revokeObjectURL(url);
+    } catch (error) {
+        console.error('Error generating ticket:', error);
+    }
+}
+
+function updateDailySummary() {
+    const today = new Date().toDateString();
+    const todaySales = sales.filter(sale => 
+        new Date(sale.created_at).toDateString() === today
+    );
+    
+    const dailySalesCount = todaySales.length;
+    const dailyRevenue = todaySales.reduce((sum, sale) => sum + sale.total, 0);
+    
+    document.getElementById('daily-sales').textContent = dailySalesCount;
+    document.getElementById('daily-revenue').textContent = `$${dailyRevenue}`;
+}
+
+// Event listeners
+document.getElementById('saleForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(e.target);
+    const saleData = {
+        product_id: parseInt(formData.get('product_id')),
+        quantity: parseInt(formData.get('quantity')),
+        customer_name: formData.get('customer_name'),
+        customer_phone: formData.get('customer_phone'),
+        payment_type: formData.get('payment_type') || 'cash',
+        customer_address: formData.get('customer_address') || ''
+    };
+    
+    try {
+        const response = await fetch('/api/sales', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(saleData)
+        });
+        
+        const data = await response.json();
+        if (data.success) {
+            alert('Venta registrada exitosamente');
+            document.getElementById('saleForm').reset();
+            loadProducts(); // Actualizar stock
+            loadSales(); // Actualizar ventas
+        } else {
+            alert(data.error || 'Error al registrar venta');
+        }
+    } catch (error) {
+        console.error('Error creating sale:', error);
+        alert('Error de conexión');
+    }
+});
+
+// Mostrar/ocultar campos de crédito
+if (storeType === 'muebles') {
+    document.getElementById('paymentType').addEventListener('change', function(e) {
+        const creditFields = document.getElementById('creditFields');
+        if (e.target.value === 'credit') {
+            creditFields.classList.remove('hidden');
+            document.getElementById('customerAddress').required = true;
+        } else {
+            creditFields.classList.add('hidden');
+            document.getElementById('customerAddress').required = false;
+        }
+    });
+}
+
+function calculateInstallment() {
+    const totalAmount = parseFloat(document.getElementById('quantity').value) * parseFloat(document.querySelector('#saleProduct option:checked').textContent.split('$')[1].split(' ')[0]);
+    const installments = parseInt(document.getElementById('installments').value);
+    const monthlyPayment = totalAmount / installments;
+    const firstPaymentDate = new Date();
+    firstPaymentDate.setMonth(firstPaymentDate.getMonth() + 1);
+
+    document.getElementById('totalAmount').textContent = `$${totalAmount.toFixed(2)}`;
+    document.getElementById('monthlyPayment').textContent = `$${monthlyPayment.toFixed(2)}`;
+    document.getElementById('firstPaymentDate').textContent = firstPaymentDate.toLocaleDateString();
+}
+
+// Inicializar
+showTab('products');
+</script>
+{% endblock %}

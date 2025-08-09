@@ -1,0 +1,817 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - {{ store_type.title() }}{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 p-4">
+    <div class="max-w-7xl mx-auto">
+        <div class="flex justify-between items-center mb-6">
+            <div class="flex items-center gap-3">
+                <i data-lucide="package" class="w-8 h-8 text-blue-600"></i>
+                <h1 class="text-3xl font-bold">
+                    {% if store_type == 'ropa' %}Tienda de Ropa
+                    {% elif store_type == 'muebles' %}Tienda de Muebles
+                    {% else %}Agencia de Cerveza{% endif %}
+                </h1>
+            </div>
+            <a href="/logout" class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                <i data-lucide="log-out" class="w-4 h-4 mr-2"></i>
+                Cerrar Sesión
+            </a>
+        </div>
+
+         Tabs 
+        <div class="mb-6">
+            <div class="border-b border-gray-200">
+                <nav class="-mb-px flex space-x-8">
+                    <button onclick="showTab('products')" class="tab-button border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm" data-tab="products">
+                        Productos
+                    </button>
+                    <button onclick="showTab('sales')" class="tab-button border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm" data-tab="sales">
+                        Ventas
+                    </button>
+                    {% if store_type == 'muebles' %}
+                    <button onclick="showTab('credits')" class="tab-button border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm" data-tab="credits">
+                        Créditos
+                    </button>
+                    {% endif %}
+                    <button onclick="showTab('reports')" class="tab-button border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm" data-tab="reports">
+                        Reportes
+                    </button>
+                </nav>
+            </div>
+        </div>
+
+         Tab Content 
+        <div id="products-tab" class="tab-content">
+            <div class="bg-white shadow rounded-lg">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <h2 class="text-lg font-medium text-gray-900">Gestión de Productos</h2>
+                            <p class="text-sm text-gray-500">Administra el inventario de tu tienda</p>
+                        </div>
+                        <button onclick="showProductModal()" class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700">
+                            <i data-lucide="plus" class="w-4 h-4 mr-2"></i>
+                            Agregar Producto
+                        </button>
+                    </div>
+                </div>
+                <div class="p-6">
+                    <div id="products-list" class="space-y-4">
+                         Los productos se cargarán aquí 
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="sales-tab" class="tab-content hidden">
+            <div class="bg-white shadow rounded-lg">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <h2 class="text-lg font-medium text-gray-900">Registro de Ventas</h2>
+                            <p class="text-sm text-gray-500">Historial de todas las ventas realizadas</p>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="showSaleModal()" class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700">
+                                <i data-lucide="shopping-cart" class="w-4 h-4 mr-2"></i>
+                                Nueva Venta
+                            </button>
+                            <a href="/api/export-sales/{{ store_type }}" class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                                <i data-lucide="download" class="w-4 h-4 mr-2"></i>
+                                Exportar Excel
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="p-6">
+                    <div id="sales-list" class="space-y-4">
+                         Las ventas se cargarán aquí 
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {% if store_type == 'muebles' %}
+        <div id="credits-tab" class="tab-content hidden">
+            <div class="bg-white shadow rounded-lg">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <div>
+                        <h2 class="text-lg font-medium text-gray-900">Gestión de Créditos</h2>
+                        <p class="text-sm text-gray-500">Control de ventas a crédito y pagos</p>
+                    </div>
+                </div>
+                <div class="p-6">
+                    <div id="credits-list" class="space-y-4">
+                         Los créditos se cargarán aquí 
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <div id="reports-tab" class="tab-content hidden">
+            <div class="bg-white shadow rounded-lg">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h2 class="text-lg font-medium text-gray-900">Resumen de Ventas</h2>
+                </div>
+                <div class="p-6">
+                    <div class="grid grid-cols-3 gap-4">
+                        <div class="text-center">
+                            <div id="total-sales" class="text-2xl font-bold text-blue-600">0</div>
+                            <div class="text-sm text-gray-600">Total Ventas</div>
+                        </div>
+                        <div class="text-center">
+                            <div id="total-revenue" class="text-2xl font-bold text-green-600">$0</div>
+                            <div class="text-sm text-gray-600">Ingresos Totales</div>
+                        </div>
+                        <div class="text-center">
+                            <div id="total-stock" class="text-2xl font-bold text-purple-600">0</div>
+                            <div class="text-sm text-gray-600">Productos en Stock</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+ Modal Producto 
+<div id="productModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+        <div class="mt-3">
+            <h3 class="text-lg font-medium text-gray-900 mb-4">Agregar Producto</h3>
+            <form id="productForm" class="space-y-4">
+                <div>
+                    <label for="productName" class="block text-sm font-medium text-gray-700">Nombre del Producto</label>
+                    <input type="text" id="productName" name="name" required
+                           class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                
+                <div>
+                    <label for="priceProvider" class="block text-sm font-medium text-gray-700">Precio Proveedor</label>
+                    <input type="number" step="0.01" id="priceProvider" name="price_provider" required
+                           class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                
+                <div>
+                    <label for="priceClient" class="block text-sm font-medium text-gray-700">Precio Cliente</label>
+                    <input type="number" step="0.01" id="priceClient" name="price_client" required
+                           class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                
+                <div>
+                    <label for="stock" class="block text-sm font-medium text-gray-700">Stock Inicial</label>
+                    <input type="number" id="stock" name="stock" required
+                           class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                
+                <div>
+                    <label for="category" class="block text-sm font-medium text-gray-700">Categoría</label>
+                    <input type="text" id="category" name="category" required
+                           class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                
+                <div class="flex gap-2">
+                    <button type="submit" class="flex-1 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
+                        Agregar
+                    </button>
+                    <button type="button" onclick="hideProductModal()" class="flex-1 bg-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-400">
+                        Cancelar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+ Modal Venta 
+<div id="saleModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+        <div class="mt-3">
+            <h3 class="text-lg font-medium text-gray-900 mb-4">Nueva Venta</h3>
+            <form id="saleForm" class="space-y-4">
+                <div>
+                    <label for="saleProduct" class="block text-sm font-medium text-gray-700">Producto</label>
+                    <select id="saleProduct" name="product_id" required
+                            class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">Seleccionar producto</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label for="quantity" class="block text-sm font-medium text-gray-700">Cantidad</label>
+                    <input type="number" min="1" id="quantity" name="quantity" required
+                           class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                
+                <div>
+                    <label for="customerName" class="block text-sm font-medium text-gray-700">Nombre del Cliente</label>
+                    <input type="text" id="customerName" name="customer_name" required
+                           class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                
+                <div>
+                    <label for="customerPhone" class="block text-sm font-medium text-gray-700">Teléfono del Cliente</label>
+                    <input type="text" id="customerPhone" name="customer_phone" required
+                           class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                
+                {% if store_type == 'muebles' %}
+                <div>
+                    <label for="paymentType" class="block text-sm font-medium text-gray-700">Tipo de Pago</label>
+                    <select id="paymentType" name="payment_type"
+                            class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                        <option value="cash">Contado</option>
+                        <option value="credit">Crédito</option>
+                    </select>
+                </div>
+                
+                <div id="creditFields" class="hidden space-y-4">
+                    <div>
+                        <label for="customerAddress" class="block text-sm font-medium text-gray-700">Dirección del Cliente</label>
+                        <input type="text" id="customerAddress" name="customer_address"
+                               class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    
+                    <div>
+                        <label for="installments" class="block text-sm font-medium text-gray-700">Número de Cuotas</label>
+                        <select id="installments" name="installments" onchange="calculateInstallment()"
+                                class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                            <option value="2">2 meses</option>
+                            <option value="3">3 meses</option>
+                            <option value="4">4 meses</option>
+                            <option value="5">5 meses</option>
+                            <option value="6" selected>6 meses</option>
+                        </select>
+                    </div>
+                    
+                    <div id="installmentPreview" class="p-3 bg-blue-50 rounded-md">
+                        <div class="text-sm">
+                            <div class="flex justify-between">
+                                <span class="font-medium">Total a financiar:</span>
+                                <span id="totalAmount">$0.00</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="font-medium">Cuota mensual:</span>
+                                <span id="monthlyPayment" class="text-blue-600 font-bold">$0.00</span>
+                            </div>
+                            <div class="flex justify-between text-xs text-gray-600 mt-1">
+                                <span>Primera cuota:</span>
+                                <span id="firstPaymentDate"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <div class="flex gap-2">
+                    <button type="submit" class="flex-1 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
+                        Vender
+                    </button>
+                    <button type="button" onclick="hideSaleModal()" class="flex-1 bg-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-400">
+                        Cancelar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+ Modal Detalle de Crédito 
+<div id="creditDetailModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-10 mx-auto p-5 border w-full max-w-2xl shadow-lg rounded-md bg-white">
+        <div class="mt-3">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-medium text-gray-900" id="creditDetailTitle">Detalle de Crédito</h3>
+                <button onclick="hideCreditDetailModal()" class="text-gray-400 hover:text-gray-600">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+            
+            <div id="creditDetailContent" class="space-y-4">
+                 El contenido se cargará dinámicamente 
+            </div>
+            
+            <div class="mt-6">
+                <h4 class="font-medium text-gray-900 mb-3">Registrar Nuevo Pago</h4>
+                <form id="paymentForm" class="space-y-4">
+                    <input type="hidden" id="creditId" name="credit_id">
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label for="paymentAmount" class="block text-sm font-medium text-gray-700">Monto del Pago</label>
+                            <input type="number" step="0.01" id="paymentAmount" name="amount" required
+                                   class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        
+                        <div>
+                            <label for="paymentDate" class="block text-sm font-medium text-gray-700">Fecha del Pago</label>
+                            <input type="date" id="paymentDate" name="payment_date" required
+                                   class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label for="paymentNotes" class="block text-sm font-medium text-gray-700">Notas (opcional)</label>
+                        <textarea id="paymentNotes" name="notes" rows="2"
+                                  class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"></textarea>
+                    </div>
+                    
+                    <div class="flex gap-2">
+                        <button type="submit" class="flex-1 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
+                            Registrar Pago
+                        </button>
+                        <button type="button" onclick="hideCreditDetailModal()" class="flex-1 bg-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-400">
+                            Cancelar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const storeType = '{{ store_type }}';
+let products = [];
+let sales = [];
+let credits = [];
+
+// Funciones de tabs
+function showTab(tabName) {
+    // Ocultar todos los tabs
+    document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.classList.add('hidden');
+    });
+    
+    // Mostrar el tab seleccionado
+    document.getElementById(tabName + '-tab').classList.remove('hidden');
+    
+    // Actualizar estilos de botones
+    document.querySelectorAll('.tab-button').forEach(btn => {
+        btn.classList.remove('border-blue-500', 'text-blue-600');
+        btn.classList.add('border-transparent', 'text-gray-500');
+    });
+    
+    document.querySelector(`[data-tab="${tabName}"]`).classList.remove('border-transparent', 'text-gray-500');
+    document.querySelector(`[data-tab="${tabName}"]`).classList.add('border-blue-500', 'text-blue-600');
+    
+    // Cargar datos según el tab
+    if (tabName === 'products') {
+        loadProducts();
+    } else if (tabName === 'sales') {
+        loadSales();
+    } else if (tabName === 'credits') {
+        loadCredits();
+    } else if (tabName === 'reports') {
+        updateReports();
+    }
+}
+
+// Funciones de productos
+async function loadProducts() {
+    try {
+        const response = await fetch(`/api/products/${storeType}`);
+        products = await response.json();
+        renderProducts();
+        updateProductSelect();
+    } catch (error) {
+        console.error('Error loading products:', error);
+    }
+}
+
+function renderProducts() {
+    const productsList = document.getElementById('products-list');
+    productsList.innerHTML = '';
+    
+    products.forEach(product => {
+        const productDiv = document.createElement('div');
+        productDiv.className = 'flex items-center justify-between p-4 border rounded-lg';
+        
+        productDiv.innerHTML = `
+            <div class="flex-1">
+                <h3 class="font-semibold">${product.name}</h3>
+                <div class="flex gap-4 text-sm text-gray-600">
+                    <span>Precio Proveedor: $${product.price_provider}</span>
+                    <span>Precio Cliente: $${product.price_client}</span>
+                    <span>Stock: ${product.stock}</span>
+                    <span>Categoría: ${product.category}</span>
+                </div>
+            </div>
+            <div class="flex gap-2">
+                <button class="p-2 text-gray-600 hover:text-blue-600">
+                    <i data-lucide="edit" class="w-4 h-4"></i>
+                </button>
+                <button class="p-2 text-gray-600 hover:text-red-600">
+                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                </button>
+            </div>
+        `;
+        
+        productsList.appendChild(productDiv);
+    });
+    
+    lucide.createIcons();
+}
+
+function updateProductSelect() {
+    const select = document.getElementById('saleProduct');
+    select.innerHTML = '<option value="">Seleccionar producto</option>';
+    
+    products.filter(p => p.stock > 0).forEach(product => {
+        const option = document.createElement('option');
+        option.value = product.id;
+        option.textContent = `${product.name} - $${product.price_client} (Stock: ${product.stock})`;
+        select.appendChild(option);
+    });
+}
+
+function showProductModal() {
+    document.getElementById('productModal').classList.remove('hidden');
+}
+
+function hideProductModal() {
+    document.getElementById('productModal').classList.add('hidden');
+    document.getElementById('productForm').reset();
+}
+
+// Funciones de ventas
+async function loadSales() {
+    try {
+        const response = await fetch(`/api/sales/${storeType}`);
+        sales = await response.json();
+        renderSales();
+    } catch (error) {
+        console.error('Error loading sales:', error);
+    }
+}
+
+function renderSales() {
+    const salesList = document.getElementById('sales-list');
+    salesList.innerHTML = '';
+    
+    sales.forEach(sale => {
+        const saleDiv = document.createElement('div');
+        saleDiv.className = 'flex items-center justify-between p-4 border rounded-lg';
+        
+        const paymentBadge = sale.payment_type === 'cash' ? 'Contado' : 'Crédito';
+        
+        saleDiv.innerHTML = `
+            <div class="flex-1">
+                <div class="flex items-center gap-3">
+                    <h3 class="font-semibold">${sale.product_name}</h3>
+                    <span class="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">${paymentBadge}</span>
+                </div>
+                <div class="flex gap-4 text-sm text-gray-600">
+                    <span>Cantidad: ${sale.quantity}</span>
+                    <span>Total: $${sale.total}</span>
+                    <span>Cliente: ${sale.customer_name}</span>
+                    <span>Fecha: ${new Date(sale.created_at).toLocaleDateString()}</span>
+                    <span>Empleado: ${sale.employee_name}</span>
+                </div>
+            </div>
+            <button onclick="generateTicket(${sale.id})" class="inline-flex items-center px-3 py-1 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                <i data-lucide="file-text" class="w-4 h-4 mr-2"></i>
+                Ticket
+            </button>
+        `;
+        
+        salesList.appendChild(saleDiv);
+    });
+    
+    lucide.createIcons();
+}
+
+function showSaleModal() {
+    loadProducts(); // Cargar productos para el select
+    document.getElementById('saleModal').classList.remove('hidden');
+}
+
+function hideSaleModal() {
+    document.getElementById('saleModal').classList.add('hidden');
+    document.getElementById('saleForm').reset();
+}
+
+async function generateTicket(saleId) {
+    try {
+        const response = await fetch(`/api/ticket/${saleId}`);
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `ticket-${saleId}.pdf`;
+        a.click();
+        window.URL.revokeObjectURL(url);
+    } catch (error) {
+        console.error('Error generating ticket:', error);
+    }
+}
+
+// Funciones de créditos (solo para muebles)
+async function loadCredits() {
+    if (storeType !== 'muebles') return;
+    
+    try {
+        const response = await fetch(`/api/credits/${storeType}`);
+        credits = await response.json();
+        renderCredits();
+    } catch (error) {
+        console.error('Error loading credits:', error);
+    }
+}
+
+function renderCredits() {
+    const creditsList = document.getElementById('credits-list');
+    if (!creditsList) return;
+    
+    creditsList.innerHTML = '';
+    
+    credits.forEach(credit => {
+        const creditDiv = document.createElement('div');
+        creditDiv.className = 'p-4 border rounded-lg';
+        
+        const statusBadge = getStatusBadge(credit.status);
+        const progressPercentage = (credit.paid_amount / credit.total_amount * 100).toFixed(1);
+        
+        creditDiv.innerHTML = `
+            <div class="flex items-center justify-between mb-2">
+                <h3 class="font-semibold">${credit.customer_name}</h3>
+                <span class="px-2 py-1 text-xs rounded-full ${statusBadge.class}">${statusBadge.text}</span>
+            </div>
+            <div class="grid grid-cols-2 gap-4 text-sm mb-3">
+                <div>
+                    <p><strong>Producto:</strong> ${credit.product_name}</p>
+                    <p><strong>Total:</strong> $${credit.total_amount.toFixed(2)}</p>
+                    <p><strong>Pagado:</strong> $${credit.paid_amount.toFixed(2)}</p>
+                </div>
+                <div>
+                    <p><strong>Restante:</strong> $${credit.remaining_amount.toFixed(2)}</p>
+                    <p><strong>Cuotas:</strong> ${credit.installments} meses</p>
+                    <p><strong>Cuota:</strong> $${credit.installment_amount.toFixed(2)}</p>
+                    <p><strong>Próximo pago:</strong> ${new Date(credit.next_payment_date).toLocaleDateString()}</p>
+                </div>
+            </div>
+            
+            <div class="mb-3">
+                <div class="flex justify-between text-xs text-gray-600 mb-1">
+                    <span>Progreso</span>
+                    <span>${progressPercentage}%</span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-2">
+                    <div class="bg-blue-600 h-2 rounded-full" style="width: ${progressPercentage}%"></div>
+                </div>
+            </div>
+            
+            <div class="flex gap-2">
+                <button onclick="showCreditDetail(${credit.id})" class="inline-flex items-center px-3 py-1 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700">
+                    <i data-lucide="credit-card" class="w-4 h-4 mr-2"></i>
+                    Ver Detalle
+                </button>
+                <button onclick="generateCreditReport(${credit.id})" class="inline-flex items-center px-3 py-1 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                    <i data-lucide="file-text" class="w-4 h-4 mr-2"></i>
+                    Reporte
+                </button>
+            </div>
+        `;
+        
+        creditsList.appendChild(creditDiv);
+    });
+    
+    lucide.createIcons();
+}
+
+function getStatusBadge(status) {
+    switch (status) {
+        case 'active':
+            return { text: 'Activo', class: 'bg-green-100 text-green-800' };
+        case 'completed':
+            return { text: 'Completado', class: 'bg-blue-100 text-blue-800' };
+        case 'overdue':
+            return { text: 'Vencido', class: 'bg-red-100 text-red-800' };
+        default:
+            return { text: status, class: 'bg-gray-100 text-gray-800' };
+    }
+}
+
+// Funciones de reportes
+function updateReports() {
+    const totalSales = sales.length;
+    const totalRevenue = sales.reduce((sum, sale) => sum + sale.total, 0);
+    const totalStock = products.reduce((sum, product) => sum + product.stock, 0);
+    
+    document.getElementById('total-sales').textContent = totalSales;
+    document.getElementById('total-revenue').textContent = `$${totalRevenue}`;
+    document.getElementById('total-stock').textContent = totalStock;
+}
+
+// Event listeners
+document.getElementById('productForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(e.target);
+    const productData = {
+        name: formData.get('name'),
+        price_provider: parseFloat(formData.get('price_provider')),
+        price_client: parseFloat(formData.get('price_client')),
+        stock: parseInt(formData.get('stock')),
+        category: formData.get('category')
+    };
+    
+    try {
+        const response = await fetch('/api/products', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(productData)
+        });
+        
+        const data = await response.json();
+        if (data.success) {
+            hideProductModal();
+            loadProducts();
+        } else {
+            alert(data.error || 'Error al crear producto');
+        }
+    } catch (error) {
+        console.error('Error creating product:', error);
+        alert('Error de conexión');
+    }
+});
+
+document.getElementById('saleForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(e.target);
+    const saleData = {
+        product_id: parseInt(formData.get('product_id')),
+        quantity: parseInt(formData.get('quantity')),
+        customer_name: formData.get('customer_name'),
+        customer_phone: formData.get('customer_phone'),
+        payment_type: formData.get('payment_type') || 'cash',
+        customer_address: formData.get('customer_address') || '',
+        installments: parseInt(formData.get('installments')) || 6
+    };
+    
+    try {
+        const response = await fetch('/api/sales', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(saleData)
+        });
+        
+        const data = await response.json();
+        if (data.success) {
+            hideSaleModal();
+            loadSales();
+            loadProducts(); // Actualizar stock
+            if (storeType === 'muebles') {
+                loadCredits(); // Actualizar créditos si es tienda de muebles
+            }
+        } else {
+            alert(data.error || 'Error al registrar venta');
+        }
+    } catch (error) {
+        console.error('Error creating sale:', error);
+        alert('Error de conexión');
+    }
+});
+
+// Mostrar/ocultar campos de crédito
+if (storeType === 'muebles') {
+    document.getElementById('paymentType').addEventListener('change', function(e) {
+        const creditFields = document.getElementById('creditFields');
+        if (e.target.value === 'credit') {
+            creditFields.classList.remove('hidden');
+            document.getElementById('customerAddress').required = true;
+            calculateInstallment(); // Calcular cuota al mostrar campos
+        } else {
+            creditFields.classList.add('hidden');
+            document.getElementById('customerAddress').required = false;
+        }
+    });
+}
+
+// Función para calcular y mostrar la cuota
+function calculateInstallment() {
+    const productSelect = document.getElementById('saleProduct');
+    const quantityInput = document.getElementById('quantity');
+    const installmentsSelect = document.getElementById('installments');
+    
+    if (!productSelect.value || !quantityInput.value) {
+        return;
+    }
+    
+    // Encontrar el producto seleccionado
+    const selectedProduct = products.find(p => p.id == productSelect.value);
+    if (!selectedProduct) return;
+    
+    const quantity = parseInt(quantityInput.value) || 0;
+    const total = selectedProduct.price_client * quantity;
+    const installments = parseInt(installmentsSelect.value);
+    const monthlyPayment = total / installments;
+    
+    // Actualizar la vista previa
+    document.getElementById('totalAmount').textContent = `$${total.toFixed(2)}`;
+    document.getElementById('monthlyPayment').textContent = `$${monthlyPayment.toFixed(2)}`;
+    
+    // Calcular fecha de primera cuota (30 días desde hoy)
+    const firstPaymentDate = new Date();
+    firstPaymentDate.setDate(firstPaymentDate.getDate() + 30);
+    document.getElementById('firstPaymentDate').textContent = firstPaymentDate.toLocaleDateString();
+}
+
+// Actualizar cálculo cuando cambie el producto o cantidad
+document.getElementById('saleProduct').addEventListener('change', calculateInstallment);
+document.getElementById('quantity').addEventListener('input', calculateInstallment);
+
+// Funciones para el modal de detalle de crédito
+function showCreditDetail(creditId) {
+    const credit = credits.find(c => c.id === creditId);
+    if (!credit) return;
+    
+    document.getElementById('creditDetailTitle').textContent = `Crédito - ${credit.customer_name}`;
+    document.getElementById('creditId').value = creditId;
+    
+    // Establecer fecha actual por defecto
+    document.getElementById('paymentDate').value = new Date().toISOString().split('T')[0];
+    
+    // Sugerir el monto de la cuota
+    document.getElementById('paymentAmount').value = credit.installment_amount.toFixed(2);
+    
+    const content = document.getElementById('creditDetailContent');
+    content.innerHTML = `
+        <div class="bg-gray-50 p-4 rounded-lg">
+            <div class="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                    <p><strong>Cliente:</strong> ${credit.customer_name}</p>
+                    <p><strong>Teléfono:</strong> ${credit.customer_phone}</p>
+                    <p><strong>Dirección:</strong> ${credit.customer_address}</p>
+                    <p><strong>Producto:</strong> ${credit.product_name}</p>
+                </div>
+                <div>
+                    <p><strong>Total:</strong> $${credit.total_amount.toFixed(2)}</p>
+                    <p><strong>Pagado:</strong> $${credit.paid_amount.toFixed(2)}</p>
+                    <p><strong>Restante:</strong> $${credit.remaining_amount.toFixed(2)}</p>
+                    <p><strong>Cuotas:</strong> ${credit.installments} meses</p>
+                    <p><strong>Cuota mensual:</strong> $${credit.installment_amount.toFixed(2)}</p>
+                    <p><strong>Próximo pago:</strong> ${new Date(credit.next_payment_date).toLocaleDateString()}</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-blue-50 p-4 rounded-lg">
+            <h5 class="font-medium text-blue-900 mb-2">Progreso del Pago</h5>
+            <div class="w-full bg-blue-200 rounded-full h-2">
+                <div class="bg-blue-600 h-2 rounded-full" style="width: ${(credit.paid_amount / credit.total_amount * 100).toFixed(1)}%"></div>
+            </div>
+            <p class="text-sm text-blue-700 mt-1">${(credit.paid_amount / credit.total_amount * 100).toFixed(1)}% completado</p>
+        </div>
+    `;
+    
+    document.getElementById('creditDetailModal').classList.remove('hidden');
+    lucide.createIcons();
+}
+
+function hideCreditDetailModal() {
+    document.getElementById('creditDetailModal').classList.add('hidden');
+    document.getElementById('paymentForm').reset();
+}
+
+// Event listener para el formulario de pago
+document.getElementById('paymentForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(e.target);
+    const paymentData = {
+        amount: parseFloat(formData.get('amount')),
+        notes: formData.get('notes') || ''
+    };
+    
+    const creditId = formData.get('credit_id');
+    
+    try {
+        const response = await fetch(`/api/credits/${creditId}/payment`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(paymentData)
+        });
+        
+        const data = await response.json();
+        if (data.success) {
+            hideCreditDetailModal();
+            loadCredits(); // Recargar créditos
+            alert('Pago registrado exitosamente');
+        } else {
+            alert(data.error || 'Error al registrar pago');
+        }
+    } catch (error) {
+        console.error('Error registering payment:', error);
+        alert('Error de conexión');
+    }
+});
+
+// Inicializar
+showTab('products');
+</script>
+{% endblock %}

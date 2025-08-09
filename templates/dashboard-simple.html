@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - {{ store_type.title() }}{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 p-4">
+    <div class="max-w-7xl mx-auto">
+        <div class="flex justify-between items-center mb-6">
+            <div class="flex items-center gap-3">
+                <i data-lucide="package" class="w-8 h-8 text-blue-600"></i>
+                <h1 class="text-3xl font-bold">
+                    {% if store_type == 'ropa' %}Tienda de Ropa
+                    {% elif store_type == 'muebles' %}Tienda de Muebles
+                    {% else %}Agencia de Cerveza{% endif %}
+                </h1>
+            </div>
+            <a href="/logout" class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                <i data-lucide="log-out" class="w-4 h-4 mr-2"></i>
+                Cerrar Sesión
+            </a>
+        </div>
+
+        <div class="grid gap-6">
+            <div class="bg-white shadow rounded-lg p-6">
+                <h2 class="text-xl font-semibold mb-4">Bienvenido al Dashboard</h2>
+                <p class="text-gray-600">Sistema de gestión para {{ store_type.replace('_', ' ').title() }}</p>
+                
+                <div class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="bg-blue-50 p-4 rounded-lg">
+                        <div class="flex items-center">
+                            <i data-lucide="package" class="w-8 h-8 text-blue-600 mr-3"></i>
+                            <div>
+                                <h3 class="font-semibold">Productos</h3>
+                                <p class="text-sm text-gray-600">Gestionar inventario</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-green-50 p-4 rounded-lg">
+                        <div class="flex items-center">
+                            <i data-lucide="shopping-cart" class="w-8 h-8 text-green-600 mr-3"></i>
+                            <div>
+                                <h3 class="font-semibold">Ventas</h3>
+                                <p class="text-sm text-gray-600">Registrar ventas</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-purple-50 p-4 rounded-lg">
+                        <div class="flex items-center">
+                            <i data-lucide="users" class="w-8 h-8 text-purple-600 mr-3"></i>
+                            <div>
+                                <h3 class="font-semibold">Empleados</h3>
+                                <p class="text-sm text-gray-600">Gestionar personal</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
