@@ -40,17 +40,7 @@
                 </button>
             </form>
             
-            <div class="mt-6 p-4 bg-gray-50 rounded-lg">
-                <h3 class="font-semibold mb-2">Usuarios de prueba:</h3>
-                <div class="text-sm space-y-1">
-                    <div><strong>Super Admin:</strong> superadmin / admin123</div>
-                    <div><strong>Tienda Ropa:</strong> tienda_ropa / ropa123</div>
-                    <div><strong>Tienda Muebles:</strong> tienda_muebles / muebles123</div>
-                    <div><strong>Agencia Cerveza:</strong> agencia_cerveza / cerveza123</div>
-                </div>
-            </div>
-        </div>
-    </div>
+          
 </div>
 
 <script>
@@ -80,24 +70,18 @@ document.getElementById('loginForm').addEventListener('submit', async function(e
     errorDiv.classList.add('hidden');
     
     const formData = {
-        username: document.getElementById('username').value,
+        username: document.getElementById('username').value.trim(),
         password: document.getElementById('password').value
     };
     
     try {
         const response = await fetch('/login', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(formData)
         });
-        
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        const data = await response.json();
+
+        const data = await response.json().catch(() => ({})); // Si no es JSON, devolver objeto vacío
         
         if (data.success) {
             window.location.href = data.redirect;
@@ -105,14 +89,16 @@ document.getElementById('loginForm').addEventListener('submit', async function(e
             errorDiv.textContent = data.error || 'Error desconocido';
             errorDiv.classList.remove('hidden');
         }
+
     } catch (error) {
         console.error('Error details:', error);
-        errorDiv.textContent = 'Error de conexión. Verifica que el servidor esté funcionando.';
+        errorDiv.textContent = 'No se pudo conectar con el servidor.';
         errorDiv.classList.remove('hidden');
     } finally {
         loginBtn.textContent = 'Iniciar Sesión';
         loginBtn.disabled = false;
     }
 });
+
 </script>
 {% endblock %}
