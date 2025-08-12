@@ -74,13 +74,10 @@ class Sale(db.Model):
     product_id = db.Column(db.Integer, db.ForeignKey('product.id'), nullable=False)
     product_name = db.Column(db.String(100), nullable=False)
     quantity = db.Column(db.Integer, nullable=False)
-    unit_price = db.Column(db.Float, nullable=False)
     total_price = db.Column(db.Float, nullable=False)
-    customer_name = db.Column(db.String(100), nullable=False)
-    customer_phone = db.Column(db.String(20), nullable=False)
+    customer_name = db.Column(db.String(100), default='Cliente')
+    payment_type = db.Column(db.String(20), default='cash')
     employee_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    store_type = db.Column(db.Enum('ropa', 'muebles', 'cerveza'), nullable=False)
-    payment_type = db.Column(db.Enum('cash', 'credit'), default='cash')
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     
     product = db.relationship('Product', backref='sales')
@@ -335,82 +332,75 @@ def get_sales(store_type):
     user = User.query.get(session['user_id'])
     
     if user.role == 'admin':
-        sales = Sale.query.filter_by(store_type=store_type).all()
+        user_products = Product.query.filter_by(user_id=user.id).all()
+        product_ids = [p.id for p in user_products]
+        sales = Sale.query.filter(Sale.product_id.in_(product_ids)).all()
     else:
-        sales = Sale.query.filter_by(store_type=store_type, employee_id=user.id).all()
+        sales = Sale.query.filter_by(employee_id=user.id).all()
     
     sales_data = []
     for sale in sales:
+        total_price = sale.product.price_client * sale.quantity
         sales_data.append({
             'id': sale.id,
-            'product_name': sale.product_name,
+            'product_name': sale.product.name,
             'quantity': sale.quantity,
-            'unit_price': sale.unit_price,
-            'total_price': sale.total_price,
+            'total_price': total_price,
             'customer_name': sale.customer_name,
-            'customer_phone': sale.customer_phone,
+            'employee_name': sale.employee.name,
             'payment_type': sale.payment_type,
-            'created_at': sale.created_at.isoformat(),
-            'employee_name': sale.employee.name
+            'created_at': sale.created_at.isoformat()
         })
     return jsonify(sales_data)
 
 @app.route('/api/sales', methods=['POST'])
 @login_required
 def create_sale():
-    data = request.get_json()
-    user = User.query.get(session['user_id'])
-    
-    product = Product.query.get(data['product_id'])
-    if not product or product.stock < data['quantity']:
-        return jsonify({'error': 'Producto no disponible o stock insuficiente'}), 400
-    
-    total = product.price_client * data['quantity']
-    
-    sale = Sale(
-        product_id=product.id,
-        product_name=product.name,
-        quantity=data['quantity'],
-        unit_price=product.price_client,
-        total_price=total,
-        customer_name=data['customer_name'],
-        customer_phone=data['customer_phone'],
-        employee_id=user.id,
-        store_type=user.store_type,
-        payment_type=data.get('payment_type', 'cash')
-    )
-    
-    product.stock -= data['quantity']
-    
-    db.session.add(sale)
-    
-    if data.get('payment_type') == 'credit' and user.store_type == 'muebles':
-        installments = data.get('installments', 6)
+    try:
+        data = request.get_json()
+        user = db.session.get(User, session['user_id'])
         
-        if installments < 2:
-            installments = 2
-        elif installments > 6:
-            installments = 6
+        if not user:
+            return jsonify({'error': 'Usuario no encontrado'}), 400
         
-        installment_amount = total / installments
+        try:
+            product = Product.query.filter_by(id=data['product_id'], user_id=user.id).first()
+        except Exception as e:
+            product = Product.query.filter_by(id=data['product_id']).first()
+            if product and product.store_type != user.store_type:
+                product = None
         
-        credit = Credit(
-            customer_name=data['customer_name'],
-            customer_phone=data['customer_phone'],
-            customer_address=data.get('customer_address', ''),
+        if not product:
+            return jsonify({'error': 'Producto no encontrado o no tienes permisos para venderlo'}), 400
+        
+        if product.stock < data['quantity']:
+            return jsonify({'error': 'Stock insuficiente'}), 400
+        
+        total_price = product.price_client * data['quantity']
+        customer_name = data.get('customer_name', 'Cliente')
+        payment_type = data.get('payment_type', 'cash')
+        
+        sale = Sale(
+            product_id=product.id,
             product_name=product.name,
-            total_amount=total,
-            remaining_amount=total,
-            installments=installments,
-            installment_amount=installment_amount,
-            next_payment_date=datetime.now(timezone.utc) + timedelta(days=30),
-            store_type='muebles'
+            quantity=data['quantity'],
+            total_price=total_price,
+            customer_name=customer_name,
+            payment_type=payment_type,
+            employee_id=user.id
         )
-        db.session.add(credit)
+        
+        product.stock -= data['quantity']
+        
+        db.session.add(sale)
+        db.session.commit()
+        
+        return jsonify({'success': True, 'message': 'Venta registrada exitosamente', 'sale_id': sale.id})
     
-    db.session.commit()
-    
-    return jsonify({'success': True, 'message': 'Venta registrada exitosamente', 'sale_id': sale.id})
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error en create_sale: {str(e)}")
+        return jsonify({'error': f'Error: {str(e)}'}), 500
 
 @app.route('/api/credits/<store_type>')
 @role_required('admin')
@@ -482,13 +472,13 @@ def generate_ticket(sale_id):
     
     p.drawString(100, 750, "TICKET DE VENTA")
     p.drawString(100, 730, "=" * 30)
-    p.drawString(100, 710, f"Tienda: {sale.store_type.upper()}")
+    p.drawString(100, 710, f"Tienda: {sale.product.owner.store_type.upper()}")
     p.drawString(100, 690, f"Fecha: {sale.created_at.strftime('%d/%m/%Y %H:%M')} UTC")
     p.drawString(100, 670, f"Empleado: {sale.employee.name}")
     p.drawString(100, 650, "")
-    p.drawString(100, 630, f"PRODUCTO: {sale.product_name}")
+    p.drawString(100, 630, f"PRODUCTO: {sale.product.name}")
     p.drawString(100, 610, f"Cantidad: {sale.quantity}")
-    p.drawString(100, 590, f"Precio Unit: ${sale.unit_price}")
+    p.drawString(100, 590, f"Precio Unit: ${sale.product.price_client}")
     p.drawString(100, 570, f"TOTAL: ${sale.total_price}")
     p.drawString(100, 550, "")
     p.drawString(100, 530, f"Cliente: {sale.customer_name}")
@@ -515,18 +505,17 @@ def export_sales(store_type):
     output = io.StringIO()
     writer = csv.writer(output)
     
-    writer.writerow(['Fecha', 'Producto', 'Cantidad', 'Precio Unit.', 'Total', 'Cliente', 'Empleado', 'Tipo Pago'])
+    writer.writerow(['Fecha', 'Producto', 'Cantidad', 'Precio Unit.', 'Total', 'Cliente', 'Empleado'])
     
     for sale in sales:
         writer.writerow([
             sale.created_at.strftime('%d/%m/%Y %H:%M UTC'),
-            sale.product_name,
+            sale.product.name,
             sale.quantity,
-            sale.unit_price,
+            sale.product.price_client,
             sale.total_price,
             sale.customer_name,
-            sale.employee.name,
-            'Contado' if sale.payment_type == 'cash' else 'Crédito'
+            sale.employee.name
         ])
     
     output.seek(0)
@@ -561,13 +550,9 @@ def add_sale():
             product_id=product.id,
             product_name=product.name,
             quantity=quantity,
-            unit_price=product.price_client,
             total_price=total,
             customer_name=customer_name,
-            customer_phone=customer_phone,
-            employee_id=session['user_id'],
-            store_type=session['store_type'],
-            payment_type=payment_type
+            employee_id=session['user_id']
         )
         
         product.stock -= quantity
@@ -642,4 +627,4 @@ def add_credit_payment():
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, host="0.0.0.0")
