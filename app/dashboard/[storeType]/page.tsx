@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Package, ShoppingCart, Users, FileText, Download, Plus, Edit, Trash2, LogOut, CreditCard, Calendar, X } from 'lucide-react'
 import { useRouter, useParams } from 'next/navigation'
-
+import React, { useState } from "react";
 interface Product {
   id: string
   name: string
