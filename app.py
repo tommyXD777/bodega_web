@@ -399,7 +399,7 @@ def delete_employee(employee_id):
         db.session.rollback()
         return jsonify({'error': f'Error al eliminar empleado: {str(e)}'}), 500
 
-@app.route('/api/employees/<int:employee_id>/togle-block', methods=['POST'])
+@app.route('/api/employees/<int:employee_id>/toggle-block', methods=['POST'])
 @role_required('admin')
 def toggle_employee_block(employee_id):
     admin_user = User.query.get(session['user_id'])
@@ -474,7 +474,7 @@ def get_products(store_type):
 @role_required('admin')
 def create_product():
     data = request.get_json()
-    user = User.query.get(session ['user_id'])
+    user = User.query.get(session['user_id'])  # Corregido de session user_id a session['user_id']
     
     product = Product(
         name=data['name'],
