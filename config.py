@@ -8,7 +8,7 @@ class Config:
     
     DB_USER = os.environ.get('DB_USER') or 'nelson'
     DB_PASSWORD = os.environ.get('DB_PASSWORD') or '3011551141.Arias'
-    DB_HOST = os.environ.get('DB_HOST') or 'admin.isladigital.xyz'
+    DB_HOST = os.environ.get('DB_HOST') or 'isladigital.xyz'
     DB_PORT = os.environ.get('DB_PORT') or '3311'
     DB_NAME = os.environ.get('DB_NAME') or 'bd_nelson'
     
