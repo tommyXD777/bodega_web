@@ -13,12 +13,12 @@ class Config:
     DB_PASSWORD = os.environ['DB_PASSWORD']
     DB_HOST = os.environ['DB_HOST']
     DB_NAME = os.environ['DB_NAME']
+    DB_PORT = os.environ['DB_PORT']  # ahora obligatorio
 
     SQLALCHEMY_DATABASE_URI = (
-        f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}/{DB_NAME}"
+        f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
     )
 
-    # Mostrar URI sin contraseña para depuración
     print(SQLALCHEMY_DATABASE_URI.replace(DB_PASSWORD, '******'), flush=True)
 
     SQLALCHEMY_TRACK_MODIFICATIONS = False
