@@ -58,7 +58,6 @@ class User(db.Model):
         
         return current_time - created_time > timedelta(days=30)
 
-
 class Product(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
@@ -415,6 +414,29 @@ def toggle_employee_block(employee_id):
     status = 'bloqueado' if employee.is_blocked else 'desbloqueado'
     return jsonify({'success': True, 'message': f'Empleado {status} exitosamente'})
 
+@app.route('/api/products/<int:product_id>', methods=['DELETE'])
+@role_required('admin')
+def delete_product(product_id):
+    try:
+        user = User.query.get(session['user_id'])
+        product = Product.query.filter_by(id=product_id, user_id=user.id).first()
+        
+        if not product:
+            return jsonify({'error': 'Producto no encontrado o no tienes permisos'}), 404
+        
+        # Verificar si tiene ventas asociadas
+        if product.sales:
+            return jsonify({'error': 'No se puede eliminar el producto porque tiene ventas asociadas'}), 400
+        
+        db.session.delete(product)
+        db.session.commit()
+        
+        return jsonify({'success': True, 'message': 'Producto eliminado exitosamente'})
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': f'Error al eliminar producto: {str(e)}'}), 500
+
 @app.route('/dashboard/<store_type>')
 @role_required('admin')
 def dashboard(store_type):
@@ -563,7 +585,7 @@ def get_credits(store_type):
             'customer_name': credit.customer_name,
             'customer_phone': credit.customer_phone,
             'customer_address': credit.customer_address,
-            'product_name': credit.product_name,
+            'product_name': product_name,
             'total_amount': credit.total_amount,
             'paid_amount': credit.paid_amount,
             'remaining_amount': credit.remaining_amount,
@@ -774,7 +796,7 @@ def add_credit_payment():
         
         return jsonify({'success': True, 'message': 'Pago registrado exitosamente'})
         
-    except Exception e:
+    except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
