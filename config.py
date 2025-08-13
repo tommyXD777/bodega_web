@@ -6,7 +6,7 @@ load_dotenv()
 class Config:
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'tienda-contabilidad-2024-super-secret-key-change-in-production'
     
-    DB_USER = os.environ.get('DB_USER') or 'nelson'
+    DB_USER = os.environ.get('DB_USER')
     DB_PASSWORD = os.environ.get('DB_PASSWORD') or '3011551141.Arias'
     DB_HOST = os.environ.get('DB_HOST') or 'isladigital.xyz'
     DB_PORT = os.environ.get('DB_PORT') or '3311'
