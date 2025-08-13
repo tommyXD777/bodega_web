@@ -194,7 +194,7 @@ def login():
             session['user_role'] = user.role
             session['store_type'] = user.store_type
             
-            print(f"Login exitoso para usuario: {username}")
+            print(f"Login exitoso - Session: user_id={user.id}, role={user.role}, store_type={user.store_type}")
             
             return jsonify({
                 'success': True,
@@ -399,7 +399,7 @@ def delete_employee(employee_id):
         db.session.rollback()
         return jsonify({'error': f'Error al eliminar empleado: {str(e)}'}), 500
 
-@app.route('/api/employees/<int:employee_id>/toggle-block', methods=['POST'])
+@app.route('/api/employees/<int:employee_id>/togle-block', methods=['POST'])
 @role_required('admin')
 def toggle_employee_block(employee_id):
     admin_user = User.query.get(session['user_id'])
@@ -456,6 +456,8 @@ def get_products(store_type):
     else:
         products = Product.query.filter_by(store_type=store_type, user_id=user.id).all()
     
+    print(f"Products retrieved: {len(products)} for store_type: {store_type}, user_id: {user.id}")
+    
     products_data = []
     for product in products:
         products_data.append({
@@ -472,7 +474,7 @@ def get_products(store_type):
 @role_required('admin')
 def create_product():
     data = request.get_json()
-    user = User.query.get(session['user_id'])
+    user = User.query.get(session ['user_id'])
     
     product = Product(
         name=data['name'],
@@ -500,6 +502,8 @@ def get_sales(store_type):
         sales = Sale.query.filter(Sale.product_id.in_(product_ids)).all()
     else:
         sales = Sale.query.filter_by(employee_id=user.id).all()
+    
+    print(f"Sales retrieved: {len(sales)} for store_type: {store_type}, user_id: {user.id}")
     
     sales_data = []
     for sale in sales:
@@ -578,6 +582,8 @@ def get_credits(store_type):
         return jsonify([])
     
     credits = Credit.query.filter_by(store_type=store_type).all()
+    print(f"Credits retrieved: {len(credits)} for store_type: {store_type}")
+    
     credits_data = []
     for credit in credits:
         credits_data.append({
@@ -585,7 +591,7 @@ def get_credits(store_type):
             'customer_name': credit.customer_name,
             'customer_phone': credit.customer_phone,
             'customer_address': credit.customer_address,
-            'product_name': product_name,
+            'product_name': credit.product_name,
             'total_amount': credit.total_amount,
             'paid_amount': credit.paid_amount,
             'remaining_amount': credit.remaining_amount,
@@ -673,6 +679,8 @@ def export_sales(store_type):
     user_products = Product.query.filter_by(user_id=user.id).all()
     product_ids = [p.id for p in user_products]
     sales = Sale.query.filter(Sale.product_id.in_(product_ids)).all()
+    
+    print(f"Exporting sales: {len(sales)} for store_type: {store_type}, user_id: {user.id}")
     
     output = io.StringIO()
     writer = csv.writer(output)
