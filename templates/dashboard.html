@@ -30,6 +30,10 @@
                     <button onclick="showTab('sales')" class="tab-button border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm" data-tab="sales">
                         Ventas
                     </button>
+                    <!-- Nueva pestaña para empleados -->
+                    <button onclick="showTab('employees')" class="tab-button border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm" data-tab="employees">
+                        Empleados
+                    </button>
                     {% if store_type == 'muebles' %}
                     <button onclick="showTab('credits')" class="tab-button border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm" data-tab="credits">
                         Créditos
@@ -88,6 +92,29 @@
                 <div class="p-6">
                     <div id="sales-list" class="space-y-4">
                          Las ventas se cargarán aquí 
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Nueva pestaña de empleados -->
+        <div id="employees-tab" class="tab-content hidden">
+            <div class="bg-white shadow rounded-lg">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <h2 class="text-lg font-medium text-gray-900">Gestión de Empleados</h2>
+                            <p class="text-sm text-gray-500">Administra los empleados de tu tienda</p>
+                        </div>
+                        <button onclick="showEmployeeModal()" class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700">
+                            <i data-lucide="user-plus" class="w-4 h-4 mr-2"></i>
+                            Crear Empleado
+                        </button>
+                    </div>
+                </div>
+                <div class="p-6">
+                    <div id="employees-list" class="space-y-4">
+                        <!-- Los empleados se cargarán aquí -->
                     </div>
                 </div>
             </div>
@@ -333,11 +360,78 @@
     </div>
 </div>
 
+<!-- Modal Empleado -->
+<div id="employeeModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+        <div class="mt-3">
+            <h3 class="text-lg font-medium text-gray-900 mb-4" id="employeeModalTitle">Crear Empleado</h3>
+            <form id="employeeForm" class="space-y-4">
+                <input type="hidden" id="employeeId" name="employeeId">
+                
+                <div>
+                    <label for="employeeName" class="block text-sm font-medium text-gray-700">Nombre Completo</label>
+                    <input type="text" id="employeeName" name="name" required
+                           class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                
+                <div>
+                    <label for="employeeUsername" class="block text-sm font-medium text-gray-700">Usuario</label>
+                    <input type="text" id="employeeUsername" name="username" required
+                           class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                
+                <div>
+                    <label for="employeePassword" class="block text-sm font-medium text-gray-700">Contraseña</label>
+                    <input type="password" id="employeePassword" name="password" required
+                           class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                
+                <div class="flex gap-2">
+                    <button type="submit" class="flex-1 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
+                        Guardar
+                    </button>
+                    <button type="button" onclick="hideEmployeeModal()" class="flex-1 bg-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-400">
+                        Cancelar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de confirmación para eliminar empleado -->
+<div id="deleteEmployeeModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+        <div class="mt-3 text-center">
+            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
+                <i data-lucide="alert-triangle" class="h-6 w-6 text-red-600"></i>
+            </div>
+            <h3 class="text-lg font-medium text-gray-900 mt-2">Confirmar Eliminación</h3>
+            <div class="mt-2 px-7 py-3">
+                <p class="text-sm text-gray-500" id="deleteEmployeeMessage">
+                    ¿Estás seguro de que deseas eliminar este empleado? Esta acción no se puede deshacer.
+                </p>
+            </div>
+            <div class="flex gap-2 mt-4">
+                <button id="confirmDeleteEmployee" class="flex-1 bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700">
+                    Eliminar
+                </button>
+                <button onclick="hideDeleteEmployeeModal()" class="flex-1 bg-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-400">
+                    Cancelar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 const storeType = '{{ store_type }}';
 let products = [];
 let sales = [];
 let credits = [];
+let employees = []; // Variable para empleados
+let editingEmployeeId = null; // Variable para edición de empleados
+let deletingEmployeeId = null; // Variable para eliminación de empleados
 
 // Funciones de tabs
 function showTab(tabName) {
@@ -363,12 +457,199 @@ function showTab(tabName) {
         loadProducts();
     } else if (tabName === 'sales') {
         loadSales();
+    } else if (tabName === 'employees') { // Cargar empleados
+        loadEmployees();
     } else if (tabName === 'credits') {
         loadCredits();
     } else if (tabName === 'reports') {
         updateReports();
     }
 }
+
+async function loadEmployees() {
+    try {
+        const response = await fetch('/api/employees');
+        employees = await response.json();
+        renderEmployees();
+    } catch (error) {
+        console.error('Error loading employees:', error);
+    }
+}
+
+function renderEmployees() {
+    const employeesList = document.getElementById('employees-list');
+    employeesList.innerHTML = '';
+    
+    employees.forEach(employee => {
+        const employeeDiv = document.createElement('div');
+        employeeDiv.className = 'flex items-center justify-between p-4 border rounded-lg';
+        
+        const statusBadge = getEmployeeStatusBadge(employee);
+        
+        employeeDiv.innerHTML = `
+            <div class="flex-1">
+                <div class="flex items-center gap-3">
+                    <h3 class="font-semibold">${employee.name}</h3>
+                    <span class="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-800">Empleado</span>
+                    <span class="px-2 py-1 text-xs rounded-full ${statusBadge.class}">${statusBadge.text}</span>
+                </div>
+                <div class="flex gap-4 text-sm text-gray-600">
+                    <span>Usuario: ${employee.username}</span>
+                    <span>Creado: ${new Date(employee.created_at).toLocaleDateString()}</span>
+                </div>
+            </div>
+            <div class="flex gap-2">
+                <button onclick="editEmployee(${employee.id})" class="p-2 text-gray-600 hover:text-blue-600" title="Editar">
+                    <i data-lucide="edit" class="w-4 h-4"></i>
+                </button>
+                <button onclick="toggleEmployeeBlock(${employee.id})" class="p-2 ${employee.is_blocked ? 'text-green-600 hover:text-green-700' : 'text-red-600 hover:text-red-700'}" title="${employee.is_blocked ? 'Desbloquear' : 'Bloquear'}">
+                    <i data-lucide="${employee.is_blocked ? 'unlock' : 'lock'}" class="w-4 h-4"></i>
+                </button>
+                <button onclick="showDeleteEmployeeModal(${employee.id}, '${employee.name}')" class="p-2 text-red-600 hover:text-red-700" title="Eliminar">
+                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                </button>
+            </div>
+        `;
+        
+        employeesList.appendChild(employeeDiv);
+    });
+    
+    lucide.createIcons();
+}
+
+function getEmployeeStatusBadge(employee) {
+    if (employee.is_blocked) {
+        return { text: 'Bloqueado', class: 'bg-red-100 text-red-800' };
+    }
+    if (employee.is_expired) {
+        return { text: 'Expirado', class: 'bg-yellow-100 text-yellow-800' };
+    }
+    return { text: 'Activo', class: 'bg-green-100 text-green-800' };
+}
+
+function showEmployeeModal() {
+    editingEmployeeId = null;
+    document.getElementById('employeeModalTitle').textContent = 'Crear Empleado';
+    document.getElementById('employeeForm').reset();
+    document.getElementById('employeeModal').classList.remove('hidden');
+}
+
+function hideEmployeeModal() {
+    document.getElementById('employeeModal').classList.add('hidden');
+}
+
+function editEmployee(employeeId) {
+    const employee = employees.find(e => e.id === employeeId);
+    if (!employee) return;
+    
+    editingEmployeeId = employeeId;
+    document.getElementById('employeeModalTitle').textContent = 'Editar Empleado';
+    document.getElementById('employeeId').value = employee.id;
+    document.getElementById('employeeName').value = employee.name;
+    document.getElementById('employeeUsername').value = employee.username;
+    document.getElementById('employeePassword').value = '';
+    
+    document.getElementById('employeeModal').classList.remove('hidden');
+}
+
+function showDeleteEmployeeModal(employeeId, employeeName) {
+    deletingEmployeeId = employeeId;
+    document.getElementById('deleteEmployeeMessage').textContent = 
+        `¿Estás seguro de que deseas eliminar al empleado "${employeeName}"? Esta acción no se puede deshacer.`;
+    document.getElementById('deleteEmployeeModal').classList.remove('hidden');
+}
+
+function hideDeleteEmployeeModal() {
+    deletingEmployeeId = null;
+    document.getElementById('deleteEmployeeModal').classList.add('hidden');
+}
+
+async function deleteEmployee() {
+    if (!deletingEmployeeId) return;
+    
+    try {
+        const response = await fetch(`/api/employees/${deletingEmployeeId}`, {
+            method: 'DELETE'
+        });
+        
+        const data = await response.json();
+        if (data.success) {
+            hideDeleteEmployeeModal();
+            loadEmployees();
+            alert('Empleado eliminado exitosamente');
+        } else {
+            alert(data.error || 'Error al eliminar empleado');
+        }
+    } catch (error) {
+        console.error('Error deleting employee:', error);
+        alert('Error de conexión');
+    }
+}
+
+async function toggleEmployeeBlock(employeeId) {
+    try {
+        const response = await fetch(`/api/employees/${employeeId}/toggle-block`, {
+            method: 'POST'
+        });
+        
+        const data = await response.json();
+        if (data.success) {
+            loadEmployees();
+        }
+    } catch (error) {
+        console.error('Error toggling employee block:', error);
+    }
+}
+
+        const data = await response.json();
+        if (data.success) {
+            loadEmployees();
+        }
+    } catch (error) {
+        console.error('Error toggling employee block:', error);
+    }
+}
+
+document.getElementById('employeeForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(e.target);
+    const employeeData = {
+        name: formData.get('name'),
+        username: formData.get('username'),
+        password: formData.get('password')
+    };
+    
+    try {
+        let response;
+        if (editingEmployeeId) {
+            response = await fetch(`/api/employees/${editingEmployeeId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(employeeData)
+            });
+        } else {
+            response = await fetch('/api/employees', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(employeeData)
+            });
+        }
+        
+        const data = await response.json();
+        if (data.success) {
+            hideEmployeeModal();
+            loadEmployees();
+        } else {
+            alert(data.error || 'Error al guardar empleado');
+        }
+    } catch (error) {
+        console.error('Error saving employee:', error);
+        alert('Error de conexión');
+    }
+});
+
+document.getElementById('confirmDeleteEmployee').addEventListener('click', deleteEmployee);
 
 // Funciones de productos
 async function loadProducts() {

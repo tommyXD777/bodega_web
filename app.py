@@ -33,8 +33,11 @@ class User(db.Model):
     name = db.Column(db.String(100), nullable=False)
     role = db.Column(db.Enum('superadmin', 'admin', 'empleado'), nullable=False)
     store_type = db.Column(db.Enum('ropa', 'muebles', 'cerveza'), nullable=True)
+    parent_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     is_blocked = db.Column(db.Boolean, default=False)
+    
+    employees = db.relationship('User', backref=db.backref('parent', remote_side=[id]))
     
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -270,6 +273,37 @@ def update_user(user_id):
     db.session.commit()
     return jsonify({'success': True, 'message': 'Usuario actualizado exitosamente'})
 
+@app.route('/api/users/<int:user_id>', methods=['DELETE'])
+@role_required('superadmin')
+def delete_user(user_id):
+    try:
+        user = User.query.get_or_404(user_id)
+        
+        # Verificar que no sea un superadmin
+        if user.role == 'superadmin':
+            return jsonify({'error': 'No se puede eliminar un superadministrador'}), 400
+        
+        # Verificar si tiene productos asociados
+        if user.products:
+            return jsonify({'error': 'No se puede eliminar el usuario porque tiene productos asociados'}), 400
+        
+        # Verificar si tiene ventas asociadas
+        if user.sales:
+            return jsonify({'error': 'No se puede eliminar el usuario porque tiene ventas asociadas'}), 400
+        
+        # Verificar si tiene empleados a cargo
+        if user.employees:
+            return jsonify({'error': 'No se puede eliminar el usuario porque tiene empleados a cargo'}), 400
+        
+        db.session.delete(user)
+        db.session.commit()
+        
+        return jsonify({'success': True, 'message': 'Usuario eliminado exitosamente'})
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': f'Error al eliminar usuario: {str(e)}'}), 500
+
 @app.route('/api/users/<int:user_id>/toggle-block', methods=['POST'])
 @role_required('superadmin')
 def toggle_user_block(user_id):
@@ -279,6 +313,106 @@ def toggle_user_block(user_id):
     
     status = 'bloqueado' if user.is_blocked else 'desbloqueado'
     return jsonify({'success': True, 'message': f'Usuario {status} exitosamente'})
+
+@app.route('/api/employees')
+@role_required('admin')
+def get_employees():
+    admin_user = User.query.get(session['user_id'])
+    employees = User.query.filter_by(role='empleado', parent_id=admin_user.id, store_type=admin_user.store_type).all()
+    
+    employees_data = []
+    for employee in employees:
+        employees_data.append({
+            'id': employee.id,
+            'username': employee.username,
+            'name': employee.name,
+            'store_type': employee.store_type,
+            'created_at': employee.created_at.isoformat(),
+            'is_blocked': employee.is_blocked,
+            'is_expired': employee.is_expired()
+        })
+    return jsonify(employees_data)
+
+@app.route('/api/employees', methods=['POST'])
+@role_required('admin')
+def create_employee():
+    data = request.get_json()
+    admin_user = User.query.get(session['user_id'])
+    
+    if User.query.filter_by(username=data['username']).first():
+        return jsonify({'error': 'El usuario ya existe'}), 400
+    
+    employee = User(
+        username=data['username'],
+        name=data['name'],
+        role='empleado',
+        store_type=admin_user.store_type,
+        parent_id=admin_user.id
+    )
+    employee.set_password(data['password'])
+    
+    db.session.add(employee)
+    db.session.commit()
+    
+    return jsonify({'success': True, 'message': 'Empleado creado exitosamente'})
+
+@app.route('/api/employees/<int:employee_id>', methods=['PUT'])
+@role_required('admin')
+def update_employee(employee_id):
+    admin_user = User.query.get(session['user_id'])
+    employee = User.query.filter_by(id=employee_id, parent_id=admin_user.id).first()
+    
+    if not employee:
+        return jsonify({'error': 'Empleado no encontrado o no tienes permisos'}), 404
+    
+    data = request.get_json()
+    
+    employee.username = data['username']
+    employee.name = data['name']
+    
+    if data.get('password'):
+        employee.set_password(data['password'])
+    
+    db.session.commit()
+    return jsonify({'success': True, 'message': 'Empleado actualizado exitosamente'})
+
+@app.route('/api/employees/<int:employee_id>', methods=['DELETE'])
+@role_required('admin')
+def delete_employee(employee_id):
+    try:
+        admin_user = User.query.get(session['user_id'])
+        employee = User.query.filter_by(id=employee_id, parent_id=admin_user.id).first()
+        
+        if not employee:
+            return jsonify({'error': 'Empleado no encontrado o no tienes permisos'}), 404
+        
+        # Verificar si tiene ventas asociadas
+        if employee.sales:
+            return jsonify({'error': 'No se puede eliminar el empleado porque tiene ventas asociadas'}), 400
+        
+        db.session.delete(employee)
+        db.session.commit()
+        
+        return jsonify({'success': True, 'message': 'Empleado eliminado exitosamente'})
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': f'Error al eliminar empleado: {str(e)}'}), 500
+
+@app.route('/api/employees/<int:employee_id>/toggle-block', methods=['POST'])
+@role_required('admin')
+def toggle_employee_block(employee_id):
+    admin_user = User.query.get(session['user_id'])
+    employee = User.query.filter_by(id=employee_id, parent_id=admin_user.id).first()
+    
+    if not employee:
+        return jsonify({'error': 'Empleado no encontrado o no tienes permisos'}), 404
+    
+    employee.is_blocked = not employee.is_blocked
+    db.session.commit()
+    
+    status = 'bloqueado' if employee.is_blocked else 'desbloqueado'
+    return jsonify({'success': True, 'message': f'Empleado {status} exitosamente'})
 
 @app.route('/dashboard/<store_type>')
 @role_required('admin')
@@ -292,7 +426,13 @@ def dashboard(store_type):
 @login_required
 def get_products(store_type):
     user = User.query.get(session['user_id'])
-    products = Product.query.filter_by(store_type=store_type, user_id=user.id).all()
+    
+    if user.role == 'empleado' and user.parent_id:
+        admin_user = User.query.get(user.parent_id)
+        products = Product.query.filter_by(store_type=store_type, user_id=admin_user.id).all()
+    else:
+        products = Product.query.filter_by(store_type=store_type, user_id=user.id).all()
+    
     products_data = []
     for product in products:
         products_data.append({
@@ -363,12 +503,16 @@ def create_sale():
         if not user:
             return jsonify({'error': 'Usuario no encontrado'}), 400
         
-        try:
-            product = Product.query.filter_by(id=data['product_id'], user_id=user.id).first()
-        except Exception as e:
-            product = Product.query.filter_by(id=data['product_id']).first()
-            if product and product.store_type != user.store_type:
-                product = None
+        if user.role == 'empleado' and user.parent_id:
+            admin_user = User.query.get(user.parent_id)
+            product = Product.query.filter_by(id=data['product_id'], user_id=admin_user.id).first()
+        else:
+            try:
+                product = Product.query.filter_by(id=data['product_id'], user_id=user.id).first()
+            except Exception as e:
+                product = Product.query.filter_by(id=data['product_id']).first()
+                if product and product.store_type != user.store_type:
+                    product = None
         
         if not product:
             return jsonify({'error': 'Producto no encontrado o no tienes permisos para venderlo'}), 400
@@ -627,4 +771,4 @@ def add_credit_payment():
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
-    app.run(debug=True, host="0.0.0.0")
+    app.run(debug=True)
