@@ -21,4 +21,4 @@ ENV FLASK_ENV=production
 EXPOSE 5000
 
 # Comando para iniciar
-CMD ["flask", "app"]
+CMD ["python", "app.py"]
