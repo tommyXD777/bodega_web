@@ -156,9 +156,16 @@ def index():
 def login():
     if request.method == 'POST':
         try:
-            data = request.get_json()
+            if request.is_json:
+                data = request.get_json()
+            else:
+                data = {
+                    'username': request.form.get('username'),
+                    'password': request.form.get('password')
+                }
+            
             if not data:
-                print("No se recibieron datos JSON")
+                print("No se recibieron datos")
                 return jsonify({'error': 'No se recibieron datos'}), 400
             
             username = data.get('username')
@@ -170,7 +177,11 @@ def login():
             
             print(f"Intento de login - Usuario: {username}")
             
-            user = User.query.filter_by(username=username).first()
+            try:
+                user = User.query.filter_by(username=username).first()
+            except Exception as db_error:
+                print(f"Error de base de datos: {str(db_error)}")
+                return jsonify({'error': 'Error de conexión a la base de datos'}), 500
             
             if not user:
                 print(f"Usuario no encontrado: {username}")
@@ -178,22 +189,36 @@ def login():
             
             print(f"Usuario encontrado: {user.username}, Role: {user.role}")
             
-            if not user.check_password(password):
+            try:
+                password_valid = user.check_password(password)
+            except Exception as pwd_error:
+                print(f"Error al verificar contraseña: {str(pwd_error)}")
+                return jsonify({'error': 'Error al verificar credenciales'}), 500
+            
+            if not password_valid:
                 print(f"Contraseña incorrecta para usuario: {username}")
                 return jsonify({'error': 'Contraseña incorrecta'}), 401
             
-            if user.is_expired():
-                user.is_blocked = True
-                db.session.commit()
-                print(f"Cuenta expirada para usuario: {username}")
+            try:
+                if user.is_expired():
+                    user.is_blocked = True
+                    db.session.commit()
+                    print(f"Cuenta expirada para usuario: {username}")
+            except Exception as exp_error:
+                print(f"Error al verificar expiración: {str(exp_error)}")
+                # Continue with login process even if expiration check fails
             
             if user.is_blocked:
                 print(f"Cuenta bloqueada para usuario: {username}")
                 return jsonify({'error': 'Usuario bloqueado. Comunícate con el distribuidor para renovar suscripción'}), 401
             
-            session['user_id'] = user.id
-            session['user_role'] = user.role
-            session['store_type'] = user.store_type
+            try:
+                session['user_id'] = user.id
+                session['user_role'] = user.role
+                session['store_type'] = user.store_type
+            except Exception as session_error:
+                print(f"Error al crear sesión: {str(session_error)}")
+                return jsonify({'error': 'Error al iniciar sesión'}), 500
             
             print(f"Login exitoso para usuario: {username}")
             
@@ -203,8 +228,11 @@ def login():
             })
             
         except Exception as e:
-            print(f"Error en login: {str(e)}")
-            return jsonify({'error': 'Error del sistema. Contacta soporte técnico'}), 500
+            print(f"Error general en login: {str(e)}")
+            print(f"Tipo de error: {type(e).__name__}")
+            import traceback
+            print(f"Traceback: {traceback.format_exc()}")
+            return jsonify({'error': f'Error específico: {str(e)}'}), 500
     
     return render_template('login.html')
 
