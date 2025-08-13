@@ -7,18 +7,15 @@ WORKDIR /app
 COPY requirements.txt .
 
 # Instalar dependencias
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt && \
+    pip install gunicorn
 
 # Copiar todo el proyecto
 COPY . .
 
-# Variable de entorno para Flask
-ENV FLASK_APP=app.py
-ENV FLASK_RUN_HOST=0.0.0.0
-ENV FLASK_ENV=production
-
-# Puerto de Flask
+# Puerto en el que correrá la app
 EXPOSE 5000
 
-# Comando para iniciar
-CMD ["python", "app.py"]
+# Comando para iniciar Gunicorn en producción
+# "app:app" significa: archivo app.py → variable app = Flask(...)
+CMD ["gunicorn", "-b", "0.0.0.0:5000", "app:app", "--workers", "4"]
