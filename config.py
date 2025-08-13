@@ -12,11 +12,13 @@ class Config:
     DB_PORT = os.environ.get('DB_PORT') or '3311'
     DB_NAME = os.environ.get('DB_NAME') or 'bd_nelson'
     
+    
     SQLALCHEMY_DATABASE_URI = (
         f'mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}'
     )
     print(SQLALCHEMY_DATABASE_URI, flush=True)
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+
 
     ITEMS_PER_PAGE = 20
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024
