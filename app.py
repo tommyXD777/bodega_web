@@ -10,12 +10,12 @@ from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter
 from config import Config
 import pymysql
-
+from dotenv import load_dotenv
 app = Flask(__name__)
 app.secret_key = Config.SECRET_KEY
 app.config['SQLALCHEMY_DATABASE_URI'] = Config.SQLALCHEMY_DATABASE_URI
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = Config.SQLALCHEMY_TRACK_MODIFICATIONS
-
+load_dotenv()
 db = SQLAlchemy(app)
 
 # Crear tablas al iniciar la aplicación

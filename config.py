@@ -1,8 +1,10 @@
 import os
 from dotenv import load_dotenv
 
-# Ruta del .env (ajusta si está en otro directorio)
-env_path = os.path.join(os.path.dirname(__file__), '.env')
+# Ruta al .env dentro de la carpeta gigitnore
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+env_path = r"C:\Users\CGAO\Desktop\Nelson\bodega_web\gigitnore\.env"
+
 
 if os.path.exists(env_path):
     load_dotenv(env_path)
@@ -11,24 +13,32 @@ else:
     print(f"[ADVERTENCIA] No se encontró .env en: {env_path}")
 
 class Config:
-    SECRET_KEY = os.environ.get(
+    # Clave secreta para Flask
+    SECRET_KEY = os.getenv(
         'SECRET_KEY',
         'tienda-contabilidad-2024-super-secret-key-change-in-production'
     )
 
-    DB_USER = os.environ.get('DB_USER', 'root')
-    DB_PASSWORD = os.environ.get('DB_PASSWORD', '')
-    DB_HOST = os.environ.get('DB_HOST', 'localhost')
-    DB_NAME = os.environ.get('DB_NAME', 'test')
-    DB_PORT = os.environ.get('DB_PORT', '3306')
+    # Variables de conexión a la base de datos
+    DB_USER = os.getenv('DB_USER', 'root')
+    DB_PASSWORD = os.getenv('DB_PASSWORD', '')
+    DB_HOST = os.getenv('DB_HOST', 'localhost')
+    DB_NAME = os.getenv('DB_NAME', 'test')
+    DB_PORT = os.getenv('DB_PORT', '3306')
 
+    # Cadena de conexión SQLAlchemy
     SQLALCHEMY_DATABASE_URI = (
         f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
     )
 
     # Mostrar la URI sin la contraseña real
-    print("[INFO] URI de conexión:", SQLALCHEMY_DATABASE_URI.replace(DB_PASSWORD, "******"), flush=True)
+    print(
+        "[INFO] URI de conexión:",
+        SQLALCHEMY_DATABASE_URI.replace(DB_PASSWORD, "******"),
+        flush=True
+    )
 
+    # Configuraciones adicionales
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     ITEMS_PER_PAGE = 20
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024
